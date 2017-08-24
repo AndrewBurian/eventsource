@@ -2,6 +2,8 @@ package eventsource
 
 import (
 	"bytes"
+	"io"
+	"io/ioutil"
 	"strconv"
 )
 
@@ -13,6 +15,18 @@ type Event struct {
 	retry  uint64
 	buf    bytes.Buffer
 	bufSet bool
+}
+
+// DataEvent creates a new Event with the data set
+func DataEvent(data string) *Event {
+	e := &Event{}
+	io.WriteString(e, data)
+	return e
+}
+
+// ID sets the event ID
+func (e *Event) ID(id string) {
+	e.id = []byte(id)
 }
 
 // Read the event in wire format
@@ -79,4 +93,18 @@ func (e *Event) Write(p []byte) (int, error) {
 	}
 	e.bufSet = false
 	return len(p), nil
+}
+
+// WriteRaw sets an event directly in wire format
+//
+// This does no validation to ensure it is in a correct format
+// and should mostly be used to deep copy another event
+func (e *Event) WriteRaw(p []byte) (int, error) {
+	return e.buf.Write(p)
+}
+
+// String returns the Event in wire format as a string
+func (e *Event) String() string {
+	fullEvent, _ := ioutil.ReadAll(e)
+	return string(fullEvent)
 }
