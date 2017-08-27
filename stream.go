@@ -9,7 +9,6 @@ import (
 type Stream struct {
 	clients           list.List
 	listLock          sync.RWMutex
-	broadcast         chan *Event
 	shutdownWait      sync.WaitGroup
 	clientConnectHook func(*http.Request, *Client)
 }
@@ -21,7 +20,6 @@ type registeredClient struct {
 
 func New() *Stream {
 	s := &Stream{}
-	go s.run()
 	return s
 }
 
@@ -82,10 +80,17 @@ func (s *Stream) Publish(topic string, e *Event) {
 	}
 }
 
+// Shutdown terminates all clients connected to the stream and removes them
 func (s *Stream) Shutdown() {
-
+	for element := s.clients.Front(); element != nil; element.Next() {
+		cli := element.Value.(*registeredClient)
+		cli.c.Shutdown()
+		s.clients.Remove(element)
+	}
 }
 
+// CloseTopic removes all client associations with this topic, but does not
+// terminate them or remove
 func (s *Stream) CloseTopic(topic string) {
 
 }
@@ -102,27 +107,6 @@ func (s *Stream) TopicHandler(topic string) http.HandlerFunc {
 // HTTP handler
 func (s *Stream) ClientConnectHook(fn func(*http.Request, *Client)) {
 	s.clientConnectHook = fn
-}
-
-func (s *Stream) run() {
-
-	for {
-		select {
-
-		case ev, ok := <-s.broadcast:
-
-			// end of the broadcast channel indicates a shutdown
-			if !ok {
-				//s.closeAll()
-				s.shutdownWait.Done()
-				return
-			}
-
-			// otherwise normal message
-			s.sendAll(ev)
-
-		}
-	}
 }
 
 func (s *Stream) sendAll(ev *Event) {

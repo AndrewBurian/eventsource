@@ -17,7 +17,7 @@ type Event struct {
 	bufSet bool
 }
 
-// DataEvent creates a new Event with the data set
+// DataEvent creates a new Event with the data field set
 func DataEvent(data string) *Event {
 	e := &Event{}
 	io.WriteString(e, data)
