@@ -90,9 +90,6 @@ func (c *Client) run() {
 
 		case _ = <-c.close.CloseNotify():
 			c.closed = true
-			// empty the event channel
-			for _, ok := <-c.events; ok != false; {
-			}
 			c.waiter.Done()
 			return
 		}

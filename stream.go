@@ -31,10 +31,26 @@ func (s *Stream) Register(c *Client) {
 	s.addClient(c)
 }
 
+// Remove will remove a client from this stream, but not shut the client down.
+func (s *Stream) Remove(c *Client) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
+
+	for element := s.clients.Front(); element != nil; element = element.Next() {
+		if regCli := element.Value.(*registeredClient); regCli.c == c {
+			// client found
+			s.clients.Remove(element)
+			return
+		}
+	}
+}
+
 // Broadcast sends the event to all clients registered on this stream.
 func (s *Stream) Broadcast(e *Event) {
+	s.listLock.RLock()
+	defer s.listLock.RUnlock()
 
-	for element := s.clients.Front(); element != nil; element.Next() {
+	for element := s.clients.Front(); element != nil; element = element.Next() {
 		cli := element.Value.(*registeredClient)
 		cli.c.Send(e)
 	}
@@ -44,7 +60,6 @@ func (s *Stream) Broadcast(e *Event) {
 // to this topic. Subscribe will also Register an unregistered
 // client.
 func (s *Stream) Subscribe(topic string, c *Client) {
-
 	// see if the client is registered
 	cli := s.getClient(c)
 
@@ -58,6 +73,7 @@ func (s *Stream) Subscribe(topic string, c *Client) {
 
 // Unsubscribe removes clients from the topic, but not from broadcasts.
 func (s *Stream) Unsubscribe(topic string, c *Client) {
+
 	cli := s.getClient(c)
 	if cli == nil {
 		return
@@ -67,7 +83,10 @@ func (s *Stream) Unsubscribe(topic string, c *Client) {
 
 // Publish sends the event to clients that have subscribed to the given topic.
 func (s *Stream) Publish(topic string, e *Event) {
-	for element := s.clients.Front(); element != nil; element.Next() {
+	s.listLock.RLock()
+	defer s.listLock.Unlock()
+
+	for element := s.clients.Front(); element != nil; element = element.Next() {
 		cli := element.Value.(*registeredClient)
 		if cli.topics[topic] {
 			cli.c.Send(e)
@@ -77,7 +96,10 @@ func (s *Stream) Publish(topic string, e *Event) {
 
 // Shutdown terminates all clients connected to the stream and removes them
 func (s *Stream) Shutdown() {
-	for element := s.clients.Front(); element != nil; element.Next() {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
+
+	for element := s.clients.Front(); element != nil; element = element.Next() {
 		cli := element.Value.(*registeredClient)
 		cli.c.Shutdown()
 		s.clients.Remove(element)
@@ -110,6 +132,7 @@ func (s *Stream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// wait for the client to exit or be shutdown
 	s.Register(c)
 	c.Wait()
+	s.Remove(c)
 }
 
 // TopicHandler returns an HTTP handler that will register a client for broadcasts
@@ -140,6 +163,7 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 
 		// wait for the client to exit or be shutdown
 		c.Wait()
+		s.Remove(c)
 	}
 }
 
@@ -155,18 +179,17 @@ func checkRequest(r *http.Request) bool {
 }
 
 func (s *Stream) getClient(c *Client) *registeredClient {
-	if s.clients.Len() > 0 {
-		// ensure client is not already registered
-		s.listLock.RLock()
+	s.listLock.RLock()
+	defer s.listLock.RUnlock()
 
-		listItem := s.clients.Front()
-		if regCli := listItem.Value.(*registeredClient); regCli.c == c {
+	for element := s.clients.Front(); element != nil; element = element.Next() {
+		if regCli := element.Value.(*registeredClient); regCli.c == c {
 			// client found
-			s.listLock.RUnlock()
 			return regCli
 		}
 	}
 
+	// not found
 	return nil
 }
 
