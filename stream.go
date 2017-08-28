@@ -131,6 +131,9 @@ func (s *Stream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// wait for the client to exit or be shutdown
 	s.Register(c)
+	if s.clientConnectHook != nil {
+		s.clientConnectHook(r, c)
+	}
 	c.Wait()
 	s.Remove(c)
 }
@@ -159,6 +162,10 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 		// topics
 		for _, topic := range topics {
 			s.Subscribe(topic, c)
+		}
+
+		if s.clientConnectHook != nil {
+			s.clientConnectHook(r, c)
 		}
 
 		// wait for the client to exit or be shutdown
