@@ -20,18 +20,21 @@ type Event struct {
 // ID sets the event ID
 func (e *Event) ID(id string) *Event {
 	e.id = id
+	e.bufSet = false
 	return e
 }
 
 // Type sets the event's event: field
 func (e *Event) Type(t string) *Event {
 	e.event = t
+	e.bufSet = false
 	return e
 }
 
 // Type sets the event's retry: field
 func (e *Event) Retry(t uint64) *Event {
 	e.retry = t
+	e.bufSet = false
 	return e
 }
 
@@ -124,6 +127,7 @@ func (e *Event) WriteString(p string) {
 // This does no validation to ensure it is in a correct format
 // and should mostly be used to deep copy another event
 func (e *Event) WriteRaw(p []byte) (int, error) {
+	e.bufSet = true
 	return e.buf.Write(p)
 }
 
