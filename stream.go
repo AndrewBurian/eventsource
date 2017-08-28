@@ -84,7 +84,7 @@ func (s *Stream) Unsubscribe(topic string, c *Client) {
 // Publish sends the event to clients that have subscribed to the given topic.
 func (s *Stream) Publish(topic string, e *Event) {
 	s.listLock.RLock()
-	defer s.listLock.Unlock()
+	defer s.listLock.RUnlock()
 
 	for element := s.clients.Front(); element != nil; element = element.Next() {
 		cli := element.Value.(*registeredClient)

@@ -132,3 +132,15 @@ func (e *Event) String() string {
 	fullEvent, _ := ioutil.ReadAll(e)
 	return string(fullEvent)
 }
+
+// Clone returns a deep copy of the event
+func (e *Event) Clone() *Event {
+	clone := &Event{
+		id:    e.id,
+		event: e.event,
+		retry: e.retry,
+	}
+
+	clone.data = append(clone.data, e.data...)
+	return clone
+}

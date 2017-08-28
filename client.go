@@ -54,7 +54,7 @@ func (c *Client) Send(ev *Event) error {
 	if c.closed {
 		return io.ErrClosedPipe
 	}
-	c.events <- ev
+	c.events <- ev.Clone()
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (c *Client) Shutdown() {
 }
 
 // Wait blocks and waits for the client to be shutdown.
-// Call this is http handler threads to prevent the server from closing
+// Call this in http handler threads to prevent the server from closing
 // the client connection.
 func (c *Client) Wait() {
 	c.waiter.Wait()
