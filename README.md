@@ -26,6 +26,24 @@ You got it! What do you need?
 ## Multiplexing / Topics / Rooms / Channels
 We call them "topics" but the gist is the same. All Clients always recieve `Broadcast` events, but you can `Publish` events to a specific topic, and then only clients that have `Subscribe`d to that topic will recieve the event.
 
+```go
+stream.Subscribe("weather", myClient)
+stream.Publish("weather", weatherUpdateEvent)
+stream.Broadcast(tornadoWarningEvent)
+```
+
+You can also just create multiple `Stream` objects much to the same effect, then only use `Broadcast`. Streams are cheap and run no background routines, so this is a valid pattern.
+
+```go
+weatherStream := &eventstream.Stream{}
+lotteryStream := &eventstream.Stream{}
+
+weatherStream.Register(clientPlanningHikes)
+lotteryStream.Register(soonToBePoorClient)
+
+lotteryStream.Broadcast(everyoneLosesEvent)
+```
+
 ### Auto subscribe certain routes to topics
 `Stream` implements an `http.Handler` but by default just registers clients for broadcasts. 
 
