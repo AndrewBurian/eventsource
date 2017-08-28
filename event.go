@@ -2,31 +2,51 @@ package eventsource
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
 	"strconv"
+	"strings"
 )
 
 // Holds the data for an event
 type Event struct {
-	id     []byte
-	data   [][]byte
-	event  []byte
+	id     string
+	data   []string
+	event  string
 	retry  uint64
 	buf    bytes.Buffer
 	bufSet bool
 }
 
-// DataEvent creates a new Event with the data field set
-func DataEvent(data string) *Event {
-	e := &Event{}
-	io.WriteString(e, data)
+// ID sets the event ID
+func (e *Event) ID(id string) *Event {
+	e.id = id
 	return e
 }
 
-// ID sets the event ID
-func (e *Event) ID(id string) {
-	e.id = []byte(id)
+// Type sets the event's event: field
+func (e *Event) Type(t string) *Event {
+	e.event = t
+	return e
+}
+
+// Type sets the event's retry: field
+func (e *Event) Retry(t uint64) *Event {
+	e.retry = t
+	return e
+}
+
+// Data replaces the data with the given string
+func (e *Event) Data(dat string) *Event {
+	// truncate
+	e.data = e.data[:0]
+	e.WriteString(dat)
+	return e
+}
+
+// Adds data to the event without overwriting
+func (e *Event) AppendData(dat string) *Event {
+	e.WriteString(dat)
+	return e
 }
 
 // Read the event in wire format
@@ -41,14 +61,14 @@ func (e *Event) Read(p []byte) (int, error) {
 	// event:
 	if len(e.event) > 0 {
 		e.buf.WriteString("event: ")
-		e.buf.Write(e.event)
+		e.buf.WriteString(e.event)
 		e.buf.WriteByte('\n')
 	}
 
 	// id:
 	if len(e.id) > 0 {
 		e.buf.WriteString("id: ")
-		e.buf.Write(e.id)
+		e.buf.WriteString(e.id)
 		e.buf.WriteByte('\n')
 	}
 
@@ -56,7 +76,7 @@ func (e *Event) Read(p []byte) (int, error) {
 	if len(e.data) > 0 {
 		for _, entry := range e.data {
 			e.buf.WriteString("data: ")
-			e.buf.Write(entry)
+			e.buf.WriteString(entry)
 			e.buf.WriteByte('\n')
 		}
 	}
@@ -82,8 +102,13 @@ func (e *Event) Read(p []byte) (int, error) {
 // Newlines will be split into multiple data entry lines, successive
 // newlines are discarded
 func (e *Event) Write(p []byte) (int, error) {
+	e.WriteString(string(p))
+	return len(p), nil
+}
+
+func (e *Event) WriteString(p string) {
 	// split event on newlines
-	split := bytes.Split(p, []byte{'\n'})
+	split := strings.Split(p, "\n")
 	for _, entry := range split {
 		// don't write empty entries
 		if len(entry) == 0 {
@@ -92,7 +117,6 @@ func (e *Event) Write(p []byte) (int, error) {
 		e.data = append(e.data, entry)
 	}
 	e.bufSet = false
-	return len(p), nil
 }
 
 // WriteRaw sets an event directly in wire format
