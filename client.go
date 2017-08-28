@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+// Client wraps an http connection and converts it to an
+// event stream.
 type Client struct {
 	flush  http.Flusher
 	write  io.Writer
@@ -15,6 +17,10 @@ type Client struct {
 	waiter sync.WaitGroup
 }
 
+// Creates a client wrapping a response writer.
+// The response writer must support http.Flusher and http.CloseNotifier
+// interfaces.
+// Returns nil on error.
 func NewClient(w http.ResponseWriter) *Client {
 	c := &Client{
 		events: make(chan *Event, 1),

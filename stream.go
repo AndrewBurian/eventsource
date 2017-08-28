@@ -175,7 +175,8 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 }
 
 // Register a function to be called when a client connects to this stream's
-// HTTP handler
+// HTTP handler.
+// Only one handler may be registered. Further calls overwrite the previous.
 func (s *Stream) ClientConnectHook(fn func(*http.Request, *Client)) {
 	s.clientConnectHook = fn
 }
