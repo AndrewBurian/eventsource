@@ -23,7 +23,7 @@ type EventIDFactory struct {
 }
 
 // New creates an event with the Next id in the sequence
-func (f *EventIdFactory) New() *Event {
+func (f *EventIDFactory) New() *Event {
 	var e *Event
 	if f.NewFunc != nil {
 		e = f.NewFunc()
