@@ -34,7 +34,7 @@ func (e *Event) Type(t string) *Event {
 	return e
 }
 
-// Type sets the event's retry: field
+// Retry sets the event's retry: field
 func (e *Event) Retry(t uint64) *Event {
 	e.retry = t
 	e.bufSet = false
@@ -49,7 +49,7 @@ func (e *Event) Data(dat string) *Event {
 	return e
 }
 
-// Adds data to the event without overwriting
+// AppendData adds data to the event without overwriting
 func (e *Event) AppendData(dat string) *Event {
 	e.WriteString(dat)
 	return e
@@ -118,6 +118,8 @@ func (e *Event) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// WriteString adds string data to the event.
+// Equivilant to calling Write([]byte(string))
 func (e *Event) WriteString(p string) {
 	// split event on newlines
 	split := strings.Split(p, "\n")

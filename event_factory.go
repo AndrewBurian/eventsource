@@ -10,13 +10,13 @@ type EventFactory interface {
 	New() *Event
 }
 
-// EventIdFactory is an event factory that creates events with
+// EventIDFactory is an event factory that creates events with
 // sequential ID fields.
 // If NewFunc is set, the factory uses it to create events before setting
 // their IDs
 // If NewFunc is not set, NewFact will be used. If neither is set, a new
 // event is created from scratch
-type EventIdFactory struct {
+type EventIDFactory struct {
 	NewFact EventFactory
 	NewFunc func() *Event
 	Next    uint64

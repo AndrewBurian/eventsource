@@ -6,6 +6,10 @@ import (
 	"sync"
 )
 
+// Stream abstracts several client connections together and allows
+// for event multiplexing and topics.
+// A stream also implements an http.Handler to easily register incoming
+// http requests as new clients.
 type Stream struct {
 	clients           list.List
 	listLock          sync.RWMutex
@@ -174,7 +178,7 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 	}
 }
 
-// Register a function to be called when a client connects to this stream's
+// ClientConnectHook sets a function to be called when a client connects to this stream's
 // HTTP handler.
 // Only one handler may be registered. Further calls overwrite the previous.
 func (s *Stream) ClientConnectHook(fn func(*http.Request, *Client)) {
