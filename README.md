@@ -45,7 +45,7 @@ lotteryStream.Broadcast(everyoneLosesEvent)
 ```
 
 ### Auto subscribe certain routes to topics
-`Stream` implements an `http.Handler` but by default just registers clients for broadcasts. 
+`Stream` implements an `http.Handler` but by default just registers clients for broadcasts.
 
 Use `TopicHandler` to create another handler for that stream that will subscribe clients to topics as well as broadcasts.
 ```go
@@ -94,7 +94,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
     http.Error(...)
     return
   }
-  
+
   client.Wait()
 }
 ```
@@ -149,7 +149,7 @@ typeFact := &eventsource.EventTypeFactory{
 // then with incrementing ID's
 idFact := &eventsource.EventIdFactory{
   Next:    0,
-  NewFunc: typeFact.New,
+  NewFact: typeFact,
 }
 
 // then generate as many events as you want with

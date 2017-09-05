@@ -14,7 +14,10 @@ type EventFactory interface {
 // sequential ID fields.
 // If NewFunc is set, the factory uses it to create events before setting
 // their IDs
+// If NewFunc is not set, NewFact will be used. If neither is set, a new
+// event is created from scratch
 type EventIdFactory struct {
+	NewFact EventFactory
 	NewFunc func() *Event
 	Next    uint64
 }
@@ -24,6 +27,8 @@ func (f *EventIdFactory) New() *Event {
 	var e *Event
 	if f.NewFunc != nil {
 		e = f.NewFunc()
+	} else if f.NewFact != nil {
+		e = f.NewFact.New()
 	} else {
 		e = &Event{}
 	}
@@ -35,6 +40,7 @@ func (f *EventIdFactory) New() *Event {
 
 // EventTypeFactory creates events of a specific type
 type EventTypeFactory struct {
+	NewFact EventFactory
 	NewFunc func() *Event
 	Type    string
 }
@@ -42,10 +48,14 @@ type EventTypeFactory struct {
 // New creates an event with the event type set
 // If NewFunc is set, the factory uses it to create events before setting
 // their event types
+// If NewFunc is not set, NewFact will be used. If neither is set, a new
+// event is created from scratch
 func (f *EventTypeFactory) New() *Event {
 	var e *Event
 	if f.NewFunc != nil {
 		e = f.NewFunc()
+	} else if f.NewFact != nil {
+		e = f.NewFact.New()
 	} else {
 		e = &Event{}
 	}
