@@ -1,3 +1,35 @@
+/*
+Package eventsource is a library for dealing with server sent events in Go.
+
+The library attempts to make as few assumptions as possible about how your apps
+will be written, and remains as generic as possible while still being simple and useful.
+
+The three core obects to the library are Clients, Events, and Streams.
+
+Client wraps an HTTP connection, and runs a worker routine to send events to the connected
+client in a thread-safe way. It gracefully handles client disconnects.
+
+Event encapsulates all the data that can be sent with SSE, and contains the logic for converting
+it to wire format to send. Events are not thread-safe by themselves.
+
+Stream is an abstraction for 0 or more Client connections, and adds some multiplexing and filtering
+on top of the Client. It also can act as an http.Handler to automatically register inbound client
+connections and disconnectinos.
+
+A quick example of a simple sever that broadcasts a "tick" event every second
+
+	func main() {
+		stream := &eventsource.Stream{}
+		go func(s *eventsource.Stream) {
+			for {
+				time.Sleep(time.Second)
+				stream.Broadcast(eventsource.DataEvent("tick"))
+			}
+		}(stream)
+		http.ListenAndServe(":8080", stream)
+	}
+
+*/
 package eventsource
 
 import (
