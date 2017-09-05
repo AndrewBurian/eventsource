@@ -10,7 +10,7 @@ type EventFactory interface {
 	New() *Event
 }
 
-// EventIdIncrementer is an event factory that creates events with
+// EventIdFactory is an event factory that creates events with
 // sequential ID fields.
 // If NewFunc is set, the factory uses it to create events before setting
 // their IDs

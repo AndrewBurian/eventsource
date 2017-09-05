@@ -17,7 +17,7 @@ type Client struct {
 	waiter sync.WaitGroup
 }
 
-// Creates a client wrapping a response writer.
+// NewClient creates a client wrapping a response writer.
 // The response writer must support http.Flusher and http.CloseNotifier
 // interfaces.
 // Returns nil on error.

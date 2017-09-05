@@ -2,12 +2,15 @@ package eventsource
 
 import (
 	"bytes"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
 
-// Holds the data for an event
+// Event holds the structured data for an event.
+// The event object contains working memory as well as a bytes
+// buffer. The buffer is filled from the working area at the first
+// call to either Read or String. Mutating the event resets the buffer
+// but sequential calls to Read do not.
 type Event struct {
 	id     string
 	data   []string
@@ -58,6 +61,14 @@ func (e *Event) Read(p []byte) (int, error) {
 		return e.buf.Read(p)
 	}
 
+	e.prepare()
+
+	return e.buf.Read(p)
+}
+
+// Prepares the data buf for reading
+func (e *Event) prepare() {
+
 	// Wipe out any existing data
 	e.buf.Reset()
 
@@ -93,8 +104,6 @@ func (e *Event) Read(p []byte) (int, error) {
 
 	e.buf.WriteByte('\n')
 	e.bufSet = true
-
-	return e.buf.Read(p)
 }
 
 // Write to the event. Buffer will be converted to one or more
@@ -133,8 +142,8 @@ func (e *Event) WriteRaw(p []byte) (int, error) {
 
 // String returns the Event in wire format as a string
 func (e *Event) String() string {
-	fullEvent, _ := ioutil.ReadAll(e)
-	return string(fullEvent)
+	e.prepare()
+	return string(e.buf.Bytes())
 }
 
 // Clone returns a deep copy of the event
