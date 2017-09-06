@@ -135,10 +135,12 @@ func (s *Stream) Shutdown() {
 	s.listLock.Lock()
 	defer s.listLock.Unlock()
 
-	for element := s.clients.Front(); element != nil; element = element.Next() {
+	for element := s.clients.Front(); element != nil; {
 		cli := element.Value.(*registeredClient)
 		cli.c.Shutdown()
+		next := element.Next()
 		s.clients.Remove(element)
+		element = next
 	}
 }
 
