@@ -5,7 +5,7 @@ Swiss Army Knife for SSE in Golang
 So you want to publish events to client that connect to your server?
 ```go
 func main() {
-	stream := &eventsource.Stream{}
+	stream := eventsource.NewStream()
 
 	go func(s *eventsource.Stream) {
 		for {
@@ -35,8 +35,8 @@ stream.Broadcast(tornadoWarningEvent)
 You can also just create multiple `Stream` objects much to the same effect, then only use `Broadcast`. Streams are cheap and run no background routines, so this is a valid pattern.
 
 ```go
-weatherStream := &eventstream.Stream{}
-lotteryStream := &eventstream.Stream{}
+weatherStream := eventstream.NewStream()
+lotteryStream := eventstream.NewStream()
 
 weatherStream.Register(clientPlanningHikes)
 lotteryStream.Register(soonToBePoorClient)
@@ -49,7 +49,7 @@ lotteryStream.Broadcast(everyoneLosesEvent)
 
 Use `TopicHandler` to create another handler for that stream that will subscribe clients to topics as well as broadcasts.
 ```go
-stream := &eventsource.Stream{}
+stream := eventsource.NewStream()
 catsHandler := stream.TopicHandler([]string{"cat"})
 
 http.ListenAndServe(":8080", catsHandler)
@@ -62,7 +62,7 @@ Use the stream's `Register`, `Subscribe`, `Remove`, `Unsubscribe`, and `CloseTop
 Register a callback for the `Stream` to envoke everytime a new client connects with `Stream.ClientConnectHook`. It'll give you a handle to the resulting Client and the http request that created it, letting you do whatever you please.
 
 ```go
-stream := &eventsource.Stream{}
+stream := eventsource.NewStream()
 stream.ClientConnectHook(func(r *http.Requset, c *eventsource.Client){
   fmt.Println("Recieved connection from", r.Host)
   fmt.Println("Hate that guy")
