@@ -119,7 +119,7 @@ func (e *Event) Write(p []byte) (int, error) {
 }
 
 // WriteString adds string data to the event.
-// Equivilant to calling Write([]byte(string))
+// Equivalent to calling Write([]byte(string))
 func (e *Event) WriteString(p string) {
 	// split event on newlines
 	split := strings.Split(p, "\n")
