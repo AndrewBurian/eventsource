@@ -5,7 +5,7 @@ Swiss Army Knife for SSE in Golang
 So you want to publish events to client that connect to your server?
 ```go
 func main() {
-	stream := &eventsource.Stream{}
+	stream := eventsource.NewStream()
 
 	go func(s *eventsource.Stream) {
 		for {
@@ -24,7 +24,7 @@ The `Stream` object implements an `http.Handler` for you so it can be registered
 You got it! What do you need?
 
 ## Multiplexing / Topics / Rooms / Channels
-We call them "topics" but the gist is the same. All Clients always recieve `Broadcast` events, but you can `Publish` events to a specific topic, and then only clients that have `Subscribe`d to that topic will recieve the event.
+We call them "topics" but the gist is the same. All Clients always receive `Broadcast` events, but you can `Publish` events to a specific topic, and then only clients that have `Subscribe`d to that topic will receive the event.
 
 ```go
 stream.Subscribe("weather", myClient)
@@ -35,8 +35,8 @@ stream.Broadcast(tornadoWarningEvent)
 You can also just create multiple `Stream` objects much to the same effect, then only use `Broadcast`. Streams are cheap and run no background routines, so this is a valid pattern.
 
 ```go
-weatherStream := &eventstream.Stream{}
-lotteryStream := &eventstream.Stream{}
+weatherStream := eventstream.NewStream()
+lotteryStream := eventstream.NewStream()
 
 weatherStream.Register(clientPlanningHikes)
 lotteryStream.Register(soonToBePoorClient)
@@ -49,7 +49,7 @@ lotteryStream.Broadcast(everyoneLosesEvent)
 
 Use `TopicHandler` to create another handler for that stream that will subscribe clients to topics as well as broadcasts.
 ```go
-stream := &eventsource.Stream{}
+stream := eventsource.NewStream()
 catsHandler := stream.TopicHandler([]string{"cat"})
 
 http.ListenAndServe(":8080", catsHandler)
@@ -59,10 +59,10 @@ http.ListenAndServe(":8080", catsHandler)
 Use the stream's `Register`, `Subscribe`, `Remove`, `Unsubscribe`, and `CloseTopic` functions to control which clients are registered where.
 
 ## Tell me when clients connect
-Register a callback for the `Stream` to envoke everytime a new client connects with `Stream.ClientConnectHook`. It'll give you a handle to the resulting Client and the http request that created it, letting you do whatever you please.
+Register a callback for the `Stream` to invoke every time a new client connects with `Stream.ClientConnectHook`. It'll give you a handle to the resulting Client and the http request that created it, letting you do whatever you please.
 
 ```go
-stream := &eventsource.Stream{}
+stream := eventsource.NewStream()
 stream.ClientConnectHook(func(r *http.Requset, c *eventsource.Client){
   fmt.Println("Recieved connection from", r.Host)
   fmt.Println("Hate that guy")
@@ -71,13 +71,13 @@ stream.ClientConnectHook(func(r *http.Requset, c *eventsource.Client){
 })
 ```
 
-The callback will be on the same goroutine as the incoming web request that created it, but the Client is live and functioning so it'll start recieving broadcasts and publishments immediately before your callback has returned.
+The callback will be on the same goroutine as the incoming web request that created it, but the Client is live and functioning so it'll start receiving broadcasts and publications immediately before your callback has returned.
 
 ## Graceful shutdown
-The stream's `Shutdown` command will unsubscribe and disconnect all connected clients. However the `Stream` itself is not running any background routines, and may continue to register new clients if it's still registed as an http handler.
+The stream's `Shutdown` command will unsubscribe and disconnect all connected clients. However the `Stream` itself is not running any background routines, and may continue to register new clients if it's still registered as an http handler.
 
 ## Get out of my way
-Fine! The `Stream` object is entirely convinience. It runs no background routines and does no special handling. It just adds the topics abstraction and calls `NewClient` for you when it's connected to. Feel free not to use it.
+Fine! The `Stream` object is entirely convenience. It runs no background routines and does no special handling. It just adds the topics abstraction and calls `NewClient` for you when it's connected to. Feel free not to use it.
 
 # More control of the `Client`
 You betcha.
@@ -101,12 +101,12 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 Letting the http handler routine that created the Client return may cause the underlying connection to be closed by the server. Since `NewClient` does not block, use `Wait` to block until the client is shutdown.
 
 ## Shutdown the client
-The client's `Shutdown` function terminates the background routine and marks the client as closed. It does not actually sever the connection. It does unblock any routines waiting on `Wait`, which assuming the main http hander routine was waiting there, will cause the connection to close as it returns.
+The client's `Shutdown` function terminates the background routine and marks the client as closed. It does not actually sever the connection. It does unblock any routines waiting on `Wait`, which assuming the main http handler routine was waiting there, will cause the connection to close as it returns.
 
 Attempts to `Send` events to a client after it has been shutdown will result in an error
 
 # More control of Events
-Events are the most critical part of the library, and are the most versitile.
+Events are the most critical part of the library, and are the most versatile.
 
 ## Write my own events from scratch
 Events implement the `io.ReadWriter` interface so that data can be written to it from practically any source. However the `Write` interface _does not_ write an entire event in wire format. It writes the provided buffer into `data:` sections in the resulting event.
@@ -135,7 +135,7 @@ newEvent.WriteRaw(evData)             // that will work
 newEvent.AppendData("Moar")           // ... and you ruined it
 ```
 
-Use `Clone` to create a perfect deep copy that survives further mutation. Though this is less efficient in memeory.
+Use `Clone` to create a perfect deep copy that survives further mutation. Though this is less efficient in memory.
 
 ## Create events more easily
 Since you will probably be creating more than just a few events, the `EventFactory` interface and a couple helper factories and functions have been provided to speed things up.
