@@ -60,6 +60,8 @@ func NewStream() *Stream {
 // Register adds a client to the stream to receive all broadcast
 // messages. Has no effect if the client is already registered.
 func (s *Stream) Register(c *Client) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
 
 	// see if the client has been registered
 	if _, found := s.clients[c]; found {
@@ -92,6 +94,9 @@ func (s *Stream) Broadcast(e *Event) {
 // to this topic. Subscribe will also Register an unregistered
 // client.
 func (s *Stream) Subscribe(topic string, c *Client) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
+
 	// see if the client is registered
 	topics, found := s.clients[c]
 
@@ -106,6 +111,8 @@ func (s *Stream) Subscribe(topic string, c *Client) {
 
 // Unsubscribe removes clients from the topic, but not from broadcasts.
 func (s *Stream) Unsubscribe(topic string, c *Client) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
 
 	topics, found := s.clients[c]
 	if !found {
