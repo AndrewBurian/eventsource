@@ -20,8 +20,11 @@ type Client struct {
 // NewClient creates a client wrapping a response writer.
 // The response writer must support http.Flusher and http.CloseNotifier
 // interfaces.
+// When writing, the client will automatically send some headers. Passing the
+// original http.Request helps determine which headers, but the request it is
+// optional.
 // Returns nil on error.
-func NewClient(w http.ResponseWriter) *Client {
+func NewClient(w http.ResponseWriter, req *http.Request) *Client {
 	c := &Client{
 		events: make(chan *Event, 1),
 		write:  w,
@@ -44,7 +47,9 @@ func NewClient(w http.ResponseWriter) *Client {
 	// Send the initial headers
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	if req == nil || req.ProtoMajor < 2 {
+		w.Header().Set("Connection", "keep-alive")
+	}
 	flush.Flush()
 
 	// start the sending thread

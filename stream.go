@@ -161,7 +161,7 @@ func (s *Stream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the client
-	c := NewClient(w)
+	c := NewClient(w, r)
 	if c == nil {
 		http.Error(w, "EventStream not supported for this connection", http.StatusInternalServerError)
 		return
@@ -188,7 +188,7 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 		}
 
 		// create the client
-		c := NewClient(w)
+		c := NewClient(w, r)
 		if c == nil {
 			http.Error(w, "EventStream not supported for this connection", http.StatusInternalServerError)
 			return
