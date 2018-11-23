@@ -219,6 +219,11 @@ func (s *Stream) ClientConnectHook(fn func(*http.Request, *Client)) {
 	s.clientConnectHook = fn
 }
 
+// NumClients returns the number of currently connected clients
+func (s *Stream) NumClients() int {
+	return len(s.clients)
+}
+
 // Checks that a client expects an event-stream
 func checkRequest(r *http.Request) bool {
 	return r.Header.Get("Accept") == "text/event-stream"
