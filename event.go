@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // Event holds the structured data for an event.
@@ -120,7 +121,16 @@ func (e *Event) Write(p []byte) (int, error) {
 
 // WriteString adds string data to the event.
 // Equivalent to calling Write([]byte(string))
+// Panics if provided with non-ascii input
 func (e *Event) WriteString(p string) {
+	// check ASCII
+	for _, c := range p {
+		if c > unicode.MaxASCII {
+			// TODO at next major version bump, convert this to return an error
+			// instead of a blind panic
+			panic("eventsource: WriteString: Attempt to write non-ascii string")
+		}
+	}
 	// split event on newlines
 	split := strings.Split(p, "\n")
 	for _, entry := range split {
