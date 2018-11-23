@@ -83,13 +83,13 @@ Fine! The `Stream` object is entirely convenience. It runs no background routine
 You betcha.
 
 ## Create my own clients
-Clients have to be created off an `http.ResponseWriter` that supports the `http.Flusher` and `http.CloseNotifier` interfaces.
+Clients have to be created off an `http.ResponseWriter` that supports the `http.Flusher` and `http.CloseNotifier` interfaces. When creating a client, callers can optionally also pass the original `http.Request` being served, which helps determine which headers are appropriate to send in response.
 
 `NewClient` _does_ kick off a background routine to handle sending events, so constructing an object literal will not work. This is done because it's assumed you will likely be calling `NewClient` on an http handler routine, and will likely not be doing any interesting work on that routine.
 
 ```go
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  client := eventsource.NewClient(w)
+  client := eventsource.NewClient(w, r)
   if client == nil {
     http.Error(...)
     return
