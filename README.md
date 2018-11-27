@@ -1,6 +1,9 @@
 # EventSource
 Swiss Army Knife for SSE in Golang
 
+## Semantic Versioning
+This library is module-ready and versioned symantically. `master` branch tracks the latest unstable work, and the `vN` branches track stable releases.
+
 # Up and running in 30 seconds
 So you want to publish events to client that connect to your server?
 ```go
