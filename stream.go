@@ -161,7 +161,7 @@ func (s *Stream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the client
-	c := NewClient(w)
+	c := NewClient(w, r)
 	if c == nil {
 		http.Error(w, "EventStream not supported for this connection", http.StatusInternalServerError)
 		return
@@ -188,7 +188,7 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 		}
 
 		// create the client
-		c := NewClient(w)
+		c := NewClient(w, r)
 		if c == nil {
 			http.Error(w, "EventStream not supported for this connection", http.StatusInternalServerError)
 			return
@@ -217,6 +217,11 @@ func (s *Stream) TopicHandler(topics []string) http.HandlerFunc {
 // Only one handler may be registered. Further calls overwrite the previous.
 func (s *Stream) ClientConnectHook(fn func(*http.Request, *Client)) {
 	s.clientConnectHook = fn
+}
+
+// NumClients returns the number of currently connected clients
+func (s *Stream) NumClients() int {
+	return len(s.clients)
 }
 
 // Checks that a client expects an event-stream
