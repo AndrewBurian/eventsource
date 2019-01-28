@@ -153,6 +153,9 @@ func (s *Stream) Shutdown() {
 // CloseTopic removes all client associations with this topic, but does not
 // terminate them or remove
 func (s *Stream) CloseTopic(topic string) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
+
 	for _, topics := range s.clients {
 		topics[topic] = false
 	}
