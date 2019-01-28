@@ -81,13 +81,24 @@ func (s *Stream) Remove(c *Client) {
 }
 
 // Broadcast sends the event to all clients registered on this stream.
-func (s *Stream) Broadcast(e *Event) {
+func (s *Stream) Broadcast(e *Event) (broadcastCount int, clientErrs []error) {
 	s.listLock.RLock()
 	defer s.listLock.RUnlock()
 
+	count := 0
+	errs := make([]error, 0)
+
 	for cli := range s.clients {
-		cli.Send(e)
+		err := cli.Send(e)
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			count++
+		}
 	}
+
+	return count, errs
 }
 
 // Subscribe add the client to the list of clients receiving publications
@@ -147,7 +158,9 @@ func (s *Stream) Shutdown() {
 // CloseTopic removes all client associations with this topic, but does not
 // terminate them or remove
 func (s *Stream) CloseTopic(topic string) {
-
+	for _, topics := range s.clients {
+		topics[topic] = false
+	}
 }
 
 // ServeHTTP takes a client connection, registers it for broadcasts,
