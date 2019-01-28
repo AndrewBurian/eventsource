@@ -46,6 +46,7 @@ type Stream struct {
 	listLock          sync.RWMutex
 	shutdownWait      sync.WaitGroup
 	clientConnectHook func(*http.Request, *Client)
+	Errors            chan error
 }
 
 type topicList map[string]bool
@@ -54,6 +55,7 @@ type topicList map[string]bool
 func NewStream() *Stream {
 	return &Stream{
 		clients: make(map[*Client]topicList),
+		Errors:  make(chan error),
 	}
 }
 
@@ -81,24 +83,17 @@ func (s *Stream) Remove(c *Client) {
 }
 
 // Broadcast sends the event to all clients registered on this stream.
-func (s *Stream) Broadcast(e *Event) (broadcastCount int, clientErrs []error) {
+func (s *Stream) Broadcast(e *Event) {
 	s.listLock.RLock()
 	defer s.listLock.RUnlock()
-
-	count := 0
-	errs := make([]error, 0)
 
 	for cli := range s.clients {
 		err := cli.Send(e)
 
 		if err != nil {
-			errs = append(errs, err)
-		} else {
-			count++
+			s.Errors <- err
 		}
 	}
-
-	return count, errs
 }
 
 // Subscribe add the client to the list of clients receiving publications
