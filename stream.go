@@ -46,7 +46,15 @@ type Stream struct {
 	listLock          sync.RWMutex
 	shutdownWait      sync.WaitGroup
 	clientConnectHook func(*http.Request, *Client)
-	Errors            chan error
+	errors            chan *ClientError
+}
+
+// ClientError is published down a stream's Error channel when there are
+// errors with Publishing or Broadcasting.
+// The error is the value returned from the Client.Send call
+type ClientError struct {
+	Err    error
+	Client *Client
 }
 
 type topicList map[string]bool
@@ -55,8 +63,18 @@ type topicList map[string]bool
 func NewStream() *Stream {
 	return &Stream{
 		clients: make(map[*Client]topicList),
-		Errors:  make(chan error),
 	}
+}
+
+// Errors creates a buffered channel of errors that will contain
+// errors from Publish or Broadcast events.
+// The channel is no created before this call, so previous errors will not
+// be delivered here.
+// The channel is buffered to the given size. If the buffer is full and further
+// errors occur, they are silently dropped.
+func (s *Stream) Errors(size uint) <-chan *ClientError {
+	s.errors = make(chan *ClientError, size)
+	return s.errors
 }
 
 // Register adds a client to the stream to receive all broadcast
@@ -91,7 +109,7 @@ func (s *Stream) Broadcast(e *Event) {
 		err := cli.Send(e)
 
 		if err != nil {
-			s.Errors <- err
+			tryPushError(s.errors, cli, err)
 		}
 	}
 }
@@ -134,7 +152,11 @@ func (s *Stream) Publish(topic string, e *Event) {
 
 	for cli, topics := range s.clients {
 		if topics[topic] {
-			cli.Send(e)
+
+			err := cli.Send(e)
+			if err != nil {
+				tryPushError(s.errors, cli, err)
+			}
 		}
 	}
 }
@@ -238,4 +260,22 @@ func (s *Stream) NumClients() int {
 // Checks that a client expects an event-stream
 func checkRequest(r *http.Request) bool {
 	return r.Header.Get("Accept") == "text/event-stream"
+}
+
+// try and push an error to the error channel
+// fail silently if channel doesn't exist or is full
+func tryPushError(c chan<- *ClientError, cli *Client, err error) {
+	if c == nil {
+		return
+	}
+	cliErr := &ClientError{
+		err,
+		cli,
+	}
+	select {
+	case c <- cliErr:
+		// error posted
+	default:
+		// silently dropping error
+	}
 }

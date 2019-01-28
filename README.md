@@ -76,6 +76,9 @@ stream.ClientConnectHook(func(r *http.Requset, c *eventsource.Client){
 
 The callback will be on the same goroutine as the incoming web request that created it, but the Client is live and functioning so it'll start receiving broadcasts and publications immediately before your callback has returned.
 
+## Client Send Errors
+If you want to know about errors that occurring when the `Stream` tries to `Send` to individual clients (which will generally be disconnects), use the `Stream.Errors` to create a channel that will deliver them as they happen. The error stream is buffered, but if errors are created faster than they are produced, overflow to the buffer is silently discarded.
+
 ## Graceful shutdown
 The stream's `Shutdown` command will unsubscribe and disconnect all connected clients. However the `Stream` itself is not running any background routines, and may continue to register new clients if it's still registered as an http handler.
 
