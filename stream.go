@@ -46,6 +46,15 @@ type Stream struct {
 	listLock          sync.RWMutex
 	shutdownWait      sync.WaitGroup
 	clientConnectHook func(*http.Request, *Client)
+	errors            chan *ClientError
+}
+
+// ClientError is published down a stream's Error channel when there are
+// errors with Publishing or Broadcasting.
+// The error is the value returned from the Client.Send call
+type ClientError struct {
+	Err    error
+	Client *Client
 }
 
 type topicList map[string]bool
@@ -55,6 +64,17 @@ func NewStream() *Stream {
 	return &Stream{
 		clients: make(map[*Client]topicList),
 	}
+}
+
+// Errors creates a buffered channel of errors that will contain
+// errors from Publish or Broadcast events.
+// The channel is no created before this call, so previous errors will not
+// be delivered here.
+// The channel is buffered to the given size. If the buffer is full and further
+// errors occur, they are silently dropped.
+func (s *Stream) Errors(size uint) <-chan *ClientError {
+	s.errors = make(chan *ClientError, size)
+	return s.errors
 }
 
 // Register adds a client to the stream to receive all broadcast
@@ -86,7 +106,11 @@ func (s *Stream) Broadcast(e *Event) {
 	defer s.listLock.RUnlock()
 
 	for cli := range s.clients {
-		cli.Send(e)
+		err := cli.Send(e)
+
+		if err != nil {
+			tryPushError(s.errors, cli, err)
+		}
 	}
 }
 
@@ -128,7 +152,11 @@ func (s *Stream) Publish(topic string, e *Event) {
 
 	for cli, topics := range s.clients {
 		if topics[topic] {
-			cli.Send(e)
+
+			err := cli.Send(e)
+			if err != nil {
+				tryPushError(s.errors, cli, err)
+			}
 		}
 	}
 }
@@ -147,7 +175,12 @@ func (s *Stream) Shutdown() {
 // CloseTopic removes all client associations with this topic, but does not
 // terminate them or remove
 func (s *Stream) CloseTopic(topic string) {
+	s.listLock.Lock()
+	defer s.listLock.Unlock()
 
+	for _, topics := range s.clients {
+		topics[topic] = false
+	}
 }
 
 // ServeHTTP takes a client connection, registers it for broadcasts,
@@ -227,4 +260,22 @@ func (s *Stream) NumClients() int {
 // Checks that a client expects an event-stream
 func checkRequest(r *http.Request) bool {
 	return r.Header.Get("Accept") == "text/event-stream"
+}
+
+// try and push an error to the error channel
+// fail silently if channel doesn't exist or is full
+func tryPushError(c chan<- *ClientError, cli *Client, err error) {
+	if c == nil {
+		return
+	}
+	cliErr := &ClientError{
+		err,
+		cli,
+	}
+	select {
+	case c <- cliErr:
+		// error posted
+	default:
+		// silently dropping error
+	}
 }
